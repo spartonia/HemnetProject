@@ -1,0 +1,4 @@
+scrapy
+scrapyd
+scrapyd-client
+confluent-kafka
