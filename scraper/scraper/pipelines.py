@@ -5,7 +5,7 @@
 
 
 # useful for handling different item types with a single interface
-# import settings
+# from .settings import KAFKA_SETTINGS
 from itemadapter import ItemAdapter
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
@@ -13,16 +13,28 @@ from confluent_kafka import Producer
 
 
 class KafkaPipeline:
-    def __init__(self):
-        self.p = Producer({
-            'bootstrap.servers': 'localhost:9092',
-        })
+    def __init__(self, producer, topic):
+        self.p = producer
+        self.topic = topic
         self.encoder = ScrapyJSONEncoder()
 
+    @classmethod
+    def from_settings(cls, settings):
+        """
+        :param settings: the current Scrapy settings
+        :type settings: scrapy.settings.Settings
+        :rtype: A :class:`~KafkaPipeline` instance
+        """
+        brokers = settings.get('KAFKA_PRODUCER_BROKERS')
+        topic = settings.get('KAFKA_PRODUCER_TOPIC')
+        producer = Producer({
+            'bootstrap.servers': brokers,
+        })
+        return cls(producer, topic)
+
     def process_item(self, item, spider):
-        topic = 'csptest'
         msg = self.encoder.encode(item)
-        self.p.produce(topic, msg, callback=delivery_report)
+        self.p.produce(self.topic, msg, callback=delivery_report)
 
 
 def delivery_report(err, msg):
