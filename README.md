@@ -2,4 +2,4 @@
 An end to end project for collecting data from hemnet, performing data engineering and developing apps (chrome extension).
 
 ## Data Collection
-Read more (here)[/scraper]
+Read more [here](/scraper)
