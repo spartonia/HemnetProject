@@ -9,6 +9,8 @@ On `scraper` folder,
 ```bash
 $ scrapy crawl forsalespider \
 	-s KAFKA_PRODUCER_TOPIC='some-topic' \
-	-s KAFKA_PRODUCER_BROKERS=broker:port,broker:port..
+	-s KAFKA_PRODUCER_BROKERS=broker:port,broker:port.. \
+	-s REDIS_HOST=localhost \
+	[-s REDIS_PORT=port]
 
 ```
