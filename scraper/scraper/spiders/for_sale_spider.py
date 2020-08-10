@@ -13,16 +13,16 @@ from scraper.kommun_ids import municipality_ids
 BASE_URL = 'http://www.hemnet.se/bostader?'
 
 # municipality_ids = [17797,]  # Umea
-municipality_ids = municipality_ids
+# TODO
+municipality_ids = [17865,]  # Alle
+# municipality_ids = municipality_ids
+# TODO
 item_type_options = [
-    ['fritidshus', 'tomt', 'gard', 'other'],
+    # ['fritidshus', 'tomt', 'gard', 'other'],
     ['villa'],
-    ['bostadsratt'],
-    ['radhus'],
+    # ['bostadsratt'],
+    # ['radhus'],
 ]
-
-
-LAST_VISITED_IDS = set('16952838')
 
 
 def start_urls():
@@ -64,7 +64,7 @@ class ForSaleSpider(scrapy.Spider):
         if not topic:
             raise CloseSpider("'KAFKA_PRODUCER_TOPIC' is required.")
         brokers = crawler.settings.get('KAFKA_PRODUCER_BROKERS')
-        if not topic:
+        if not brokers:
             raise CloseSpider("'KAFKA_PRODUCER_BROKERS' is required.")
 
         redis_host = crawler.settings.get('REDIS_HOST')
@@ -92,6 +92,7 @@ class ForSaleSpider(scrapy.Spider):
 
         for url in urls:
             if self._is_url_visited(url):
+                print('Already visited, skipping: ', url)
                 self.SHOULD_GO_NEXT_PAGE = False
                 continue
             else:
