@@ -7,5 +7,6 @@ import scrapy
 
 
 class PageSourceItem(scrapy.Item):
-	url = scrapy.Field()
-	source = scrapy.Field()
+    url = scrapy.Field()
+    source = scrapy.Field()
+    timestamp = scrapy.Field()

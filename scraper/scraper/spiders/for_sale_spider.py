@@ -1,5 +1,6 @@
 import scrapy
 
+from datetime import datetime
 from urllib.parse import urlparse, urljoin, urlencode
 
 from scrapy.exceptions import CloseSpider
@@ -12,16 +13,14 @@ from scraper.kommun_ids import municipality_ids
 
 BASE_URL = 'http://www.hemnet.se/bostader?'
 
-# municipality_ids = [17797,]  # Umea
-# TODO
-municipality_ids = [17865,]  # Alle
-# municipality_ids = municipality_ids
-# TODO
+# municipality_ids = [17865,]  # Alle
+municipality_ids = municipality_ids
+
 item_type_options = [
-    # ['fritidshus', 'tomt', 'gard', 'other'],
+    ['fritidshus', 'tomt', 'gard', 'other'],
     ['villa'],
-    # ['bostadsratt'],
-    # ['radhus'],
+    ['bostadsratt'],
+    ['radhus'],
 ]
 
 
@@ -110,5 +109,6 @@ class ForSaleSpider(scrapy.Spider):
         item = PageSourceItem()
         item['url'] = response.url
         item['source'] = response.text
+        item['timestamp'] = datetime.utcnow().timestamp()
 
         yield item
