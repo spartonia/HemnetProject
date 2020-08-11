@@ -3,6 +3,7 @@ import scrapy
 from datetime import datetime
 from urllib.parse import urlparse, urljoin, urlencode
 
+from twisted.internet.error import TimeoutError, TCPTimedOutError
 from scrapy.exceptions import CloseSpider
 from redisbloom.client import Client as BloomClient
 from redis.connection import ConnectionError, ResponseError
@@ -96,13 +97,15 @@ class ForSaleSpider(scrapy.Spider):
                 continue
             else:
                 self._mark_as_visited(url)
-                yield scrapy.Request(url, self.parse)
+                yield scrapy.Request(url, self.parse,
+                    errback=self.download_err_back)
 
         next_href = response.css('a.next_page::attr("href")').extract_first()
 
         if next_href and self.SHOULD_GO_NEXT_PAGE:
             next_url = urljoin(response.url, next_href)
-            scrapy.Request(next_url, self.parse_list)
+            scrapy.Request(next_url, self.parse_list,
+                errback=self.download_err_back)
 
 
     def parse(self, response):
@@ -112,3 +115,18 @@ class ForSaleSpider(scrapy.Spider):
         item['timestamp'] = datetime.utcnow().timestamp()
 
         yield item
+
+    def _write_err(self, code, url):
+        with open(self.name + '_err.txt', 'a') as f:
+            f.write('{}: {}\n'.format(code, url))
+
+    def download_err_back(self, failure):
+        if failure.check(HttpError):
+            response = failure.value.response
+            self._write_err(response.status, response.url)
+        elif failure.check(TimeoutError, TCPTimedOutError):
+            request = failure.request
+            self._write_err('TimeoutError', request.url)
+        else:
+            request = failure.request
+            self._write_err('Other', request.url)
