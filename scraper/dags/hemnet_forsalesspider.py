@@ -5,34 +5,38 @@ from airflow.operators.docker_operator import DockerOperator
 
 
 # XXX: Update image name/tag
-docker_image_to_run = 'hemnet-forsalesspider:test'
+docker_image_to_run = 'hemnet-forsalesspider:latest'
+KAFKA_PRODUCER_TOPIC = 'forsale'
+KAFKA_PRODUCER_BROKERS='192.168.86.27:9092'
+REDIS_HOST='192.168.86.27'
+
 
 default_args = {
         'owner'                 : 'airflow',
         'description'           : 'Hemnet scraper for sales items',
         'depend_on_past'        : False,
-        'start_date'            : datetime.now() - timedelta(minutes=15),
+        'start_date'            : datetime(2020, 8, 12),
         'email_on_failure'      : False,
         'email_on_retry'        : False,
         'retries'               : 1,
-        'retry_delay'           : timedelta(minutes=5)
+        'retry_delay'           : timedelta(hours=1)
 }
 
 dag = DAG(
     'Hemnet_forsales_spider_dag',
     default_args=default_args,
-    description='Demoing docker operator for hemnet-forsalesspider',
-    schedule_interval=timedelta(hours=1)
+    description='Docker operator for hemnet-forsalesspider',
+    schedule_interval='53 15 * * *' # 3:53 PM
 )
 
-cmd = """
+cmd = f"""
     forsalespider \
-    -s KAFKA_PRODUCER_TOPIC='test-topic' \
-    -s KAFKA_PRODUCER_BROKERS=192.168.86.27:9092 \
-    -s REDIS_HOST=192.168.86.27
+    -s KAFKA_PRODUCER_TOPIC={KAFKA_PRODUCER_TOPIC} \
+    -s KAFKA_PRODUCER_BROKERS={KAFKA_PRODUCER_BROKERS} \
+    -s REDIS_HOST={REDIS_HOST}
 """
 t2 = DockerOperator(
-    task_id='hemnet_forsalesspider_test',
+    task_id='hemnet_forsalesspider',
     image=f'{docker_image_to_run}',
     command=cmd,
     docker_url='unix://var/run/docker.sock',
