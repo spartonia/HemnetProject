@@ -40,3 +40,7 @@ $ docker run  --net=host hemnet-forsalesspider forsalespider \
 	-s KAFKA_PRODUCER_BROKERS=192.168.86.27:9092 \
 	-s REDIS_HOST=192.168.86.27
 ```
+
+###### Airflow
+Update the corresponding dag file in `./dags` folder and copy the
+file to airflow dags folder.
