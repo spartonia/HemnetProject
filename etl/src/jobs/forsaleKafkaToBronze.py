@@ -17,17 +17,10 @@ val windowSpec = Window.partitionBy(df("topic"), df("partition")).orderBy($"offs
 val maxOffset =  row_number.over(windowSpec)
 df.withColumn("rowNumber", maxOffset).where($"rowNumber" === 1).select("topic", "partition", "offset").show(5)
 """
+import redis
 
-from pyspark.sql import SparkSession
 
-
-if __name__ == "__main__":
-    # do some arg checks
-
-    spark = SparkSession\
-        .builder\
-        .appName("ForsalesKafkaToBronze")\
-        .getOrCreate()
+def analyze(spark):
 
     df = spark\
         .read\
@@ -45,5 +38,3 @@ if __name__ == "__main__":
         .format("delta")\
         .mode("overwrite")\
         .save("s3a://hemnet-project/testHemnetbronzeNew")
-
-    spark.stop()
