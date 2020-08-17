@@ -27,5 +27,5 @@ spark-submit \
 	--conf spark.executor.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
 	--conf spark.hadoop.fs.s3a.access.key=$AWS_S3_ACCESS  \
 	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET  \
-	etl/jobs/forsaleKafkaToBronze.py 
+	jobs/forsaleKafkaToBronze.py 
 ```
