@@ -23,6 +23,8 @@ df.withColumn("rowNumber", maxOffset).where($"rowNumber" === 1).select("topic", 
 import json
 import redis
 
+from datetime import datetime
+
 import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
@@ -52,7 +54,12 @@ def analyze(spark):
         .option("startingOffsets", json.dumps(tpo))\
         .load()
 
-    data = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")    
+    today = F.current_date()
+
+    data = (df
+        .withColumn("key", df.key.cast("string"))
+        .withColumn("value", df.value.cast("string"))
+        .withColumn("ingestion_date", today))
 
     windowSpec = \
         Window.partitionBy(df["topic"], df["partition"]).orderBy(df["offset"].desc())
@@ -68,10 +75,13 @@ def analyze(spark):
 
     print("data count: ", data.count())
     print('*' * 50)
-    # data.write\
-    #     .format("delta")\
-    #     .mode("overwrite")\
-    #     .save("s3a://hemnet-project/testHemnetbronzeNew")
+    (data
+        .write
+        .partitionBy("ingestion_date")
+        .format("delta")
+        .mode("overwrite")
+        .option("overwriteSchema", "true")
+        .save("s3a://hemnet-project/testHemnetbronzeNew"))
 
 
 def update_topic_partition(tpos):
