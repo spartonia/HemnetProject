@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--job-args', nargs='*', help="Extra arguments to send to the PySpark job (example: --job-args template=manual-email1 foo=bar")
 
     args = parser.parse_args()
-    print "Called with arguments: %s" % args
+    print("Called with arguments: %s" % args)
 
     environment = {
         'PYSPARK_JOB_ARGS': ' '.join(args.job_args) if args.job_args else ''
@@ -44,7 +44,7 @@ if __name__ == '__main__':
         print 'job_args_tuples: %s' % job_args_tuples
         job_args = {a[0]: a[1] for a in job_args_tuples}
 
-    print '\nRunning job %s...\nenvironment is %s\n' % (args.job_name, environment)
+    print('\nRunning job %s...\nenvironment is %s\n' % (args.job_name, environment))
 
     # os.environ.update(environment)
     # ss = pyspark.SparkContext(appName=args.job_name, environment=environment)
@@ -57,8 +57,7 @@ if __name__ == '__main__':
     job_module = importlib.import_module('jobs.%s' % args.job_name)
 
     start = time.time()
-    # job_module.analyze(spark, **job_args)
-    job_module.analyze(spark)
+    job_module.analyze(spark, **job_args)
     end = time.time()
 
     spark.stop()

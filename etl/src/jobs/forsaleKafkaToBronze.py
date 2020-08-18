@@ -1,25 +1,3 @@
-"""
-Connect to kafka
-While there is data in kafka:
-    ingest to delta lake
-sc.stop gracefully
-
-df.select("offset").orderBy($"offset".desc).take(3)
-get the latest offset from redis
-read from there to now
-update the redis entry for last read offset
-group by topic, partition, offset
-
-val df = spark.read.format("kafka")
-.option("kafka.bootstrap.servers", "localhost:9092")
-.option("subscribe", "test-topic")
-.option("startingOffsets", \"""{"test-topic": {"0": 23}}\""").load()
-
-
-val windowSpec = Window.partitionBy(df("topic"), df("partition")).orderBy($"offset".desc)
-val maxOffset =  row_number.over(windowSpec)
-df.withColumn("rowNumber", maxOffset).where($"rowNumber" === 1).select("topic", "partition", "offset").show(5)
-"""
 import json
 import redis
 
@@ -29,28 +7,32 @@ import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
 
-REDIS_HOST = 'localhost'
-REDIS_PORT = 6379
-KAFKA_TOPIC = "test-topic"
+def analyze(spark, **kwargs):
 
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT)
+    redis_host = kwargs.get('REDIS_HOST')
+    if not redis_host:
+        raise Exception("'REDIS_HOST' is required. You can pass it through '--job-args'")
 
+    redis_port = kwargs.get('REDIS_PORT', 6379)
+    redis_client = redis.Redis(host=redis_host, port=redis_port)
 
-def analyze(spark):
+    kafka_topic = kwargs.get('KAFKA_TOPIC')
+    if not kafka_topic:
+        raise Exception("'KAFKA_TOPIC' is required. You can pass it through '--job-args'")
 
-    p_offset_str = redis_client.hget("hemnet:forsale:kafka", KAFKA_TOPIC)
+    p_offset_str = redis_client.hget("hemnet:forsale:kafka", kafka_topic)
     if p_offset_str:
         p_offset = json.loads(p_offset_str)
     else:
         p_offset = {'0': -2}
 
-    tpo = {KAFKA_TOPIC: p_offset}
+    tpo = {kafka_topic: p_offset}
 
     df = spark\
         .read\
         .format("kafka")\
         .option("kafka.bootstrap.servers", "localhost:9092")\
-        .option("subscribe", KAFKA_TOPIC)\
+        .option("subscribe", kafka_topic)\
         .option("startingOffsets", json.dumps(tpo))\
         .load()
 
@@ -71,7 +53,7 @@ def analyze(spark):
         .collect())
 
     print('*' * 50)
-    update_topic_partition(tpos)
+    update_topic_partition(redis_client, tpos)
 
     print("data count: ", data.count())
     print('*' * 50)
@@ -84,7 +66,7 @@ def analyze(spark):
         .save("s3a://hemnet-project/testHemnetbronzeNew"))
 
 
-def update_topic_partition(tpos):
+def update_topic_partition(redis, tpos):
     """
     Updates last read topicpartition offsets in redis
     """
@@ -97,4 +79,4 @@ def update_topic_partition(tpos):
             po[str(el['partition'])] = int(el['offset'] + 1)
 
         po_str = json.dumps(po)
-        redis_client.hmset("hemnet:forsale:kafka", {topic: po_str})
+        redis.hmset("hemnet:forsale:kafka", {topic: po_str})
