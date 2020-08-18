@@ -43,3 +43,16 @@ spark-submit \
 	jobs/forsaleKafkaToBronze.py 
 ```
 __Note__: If you have changed the code base, run `make build` again before submitting the new code.
+
+## Internals
+* Consumed kafka `topicParitions` (`topic + partition + offset`) are stored in redis as json string in the following manner:
+	- For each topic, partitions and offsets are jsonified as `val = json.dumps({"partition#": offset, ...})`
+	- Then values are stored in a redis hash with this schema:
+    	```bash
+    		hemnet:<spider>:kafka <kafka-topic> <val>
+    	```
+	- So, for `forsale` spider, in redis-cli:
+    	```
+    		HGET hemnet:forsale:kafka test-topic
+    	```
+	    will return something similar to `"{\"0\": 26, \"1\": 34}"`
