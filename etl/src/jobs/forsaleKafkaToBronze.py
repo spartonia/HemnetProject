@@ -64,11 +64,7 @@ def analyze(spark):
         .collect())
 
     print('*' * 50)
-    for tpo in tpos:
-        update_topic_partition(tpo)
-        # print(tpo)
-        # print("topic: " + tpo["topic"] + " partition: " + tpo['partition'] + " offset: " + str(tpo['offset']))
-    # tpos.show()
+    update_topic_partition(tpos)
 
     print("data count: ", data.count())
     print('*' * 50)
@@ -78,9 +74,17 @@ def analyze(spark):
     #     .save("s3a://hemnet-project/testHemnetbronzeNew")
 
 
-def update_topic_partition(tpo):
+def update_topic_partition(tpos):
     """
-    Note: currently supports only one partion per topic.
+    Updates last read topicpartition offsets in redis
     """
-    po = json.dumps({str(tpo['partition']): int(tpo['offset']) + 1})
-    redis_client.hmset("hemnet:forsale:kafka", {tpo['topic']: po})
+    from itertools import groupby
+
+    key_func = lambda x: x['topic']
+    for topic, group in groupby(tpos, key_func):
+        po = {}
+        for el in group:
+            po[str(el['partition'])] = int(el['offset'] + 1)
+
+        po_str = json.dumps(po)
+        redis_client.hmset("hemnet:forsale:kafka", {topic: po_str})
