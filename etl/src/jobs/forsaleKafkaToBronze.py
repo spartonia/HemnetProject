@@ -23,6 +23,10 @@ df.withColumn("rowNumber", maxOffset).where($"rowNumber" === 1).select("topic", 
 import json
 import redis
 
+import pyspark.sql.functions as F
+from pyspark.sql.window import Window
+
+
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
 KAFKA_TOPIC = "test-topic"
@@ -50,10 +54,33 @@ def analyze(spark):
 
     data = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")    
 
+    windowSpec = \
+        Window.partitionBy(df["topic"], df["partition"]).orderBy(df["offset"].desc())
+
+    maxOffset = F.row_number().over(windowSpec)
+    tpos = (df.withColumn("rowNumber", maxOffset)
+        .where(F.col("rowNumber") == 1)
+        .select("topic", "partition", "offset")
+        .collect())
+
     print('*' * 50)
+    for tpo in tpos:
+        update_topic_partition(tpo)
+        # print(tpo)
+        # print("topic: " + tpo["topic"] + " partition: " + tpo['partition'] + " offset: " + str(tpo['offset']))
+    # tpos.show()
+
     print("data count: ", data.count())
     print('*' * 50)
     # data.write\
     #     .format("delta")\
     #     .mode("overwrite")\
     #     .save("s3a://hemnet-project/testHemnetbronzeNew")
+
+
+def update_topic_partition(tpo):
+    """
+    Note: currently supports only one partion per topic.
+    """
+    po = json.dumps({str(tpo['partition']): int(tpo['offset']) + 1})
+    redis_client.hmset("hemnet:forsale:kafka", {tpo['topic']: po})
