@@ -30,7 +30,7 @@ $ pip install -r requirements.txt -t ./src/libs
 $ make build
 ```
 
-4. Then `cd` to `dist` and run:
+4. Run:
 ```bash
 spark-submit \
 	--packages io.delta:delta-core_2.12:0.7.0,org.apache.hadoop:hadoop-aws:2.7.7,org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0  \
@@ -39,8 +39,10 @@ spark-submit \
 	--conf spark.driver.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
 	--conf spark.executor.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
 	--conf spark.hadoop.fs.s3a.access.key=$AWS_S3_ACCESS  \
-	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET  \
-	jobs/forsaleKafkaToBronze.py 
+	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET \
+	--py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
+	--job forsaleKafkaToBronze  \
+	--job-args REDIS_HOST=localhost KAFKA_TOPIC=test-topic
 ```
 __Note__: If you have changed the code base, run `make build` again before submitting the new code.
 
