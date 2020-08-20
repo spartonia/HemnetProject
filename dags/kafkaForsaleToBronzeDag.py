@@ -8,7 +8,7 @@ default_args = {
         'owner'                 : 'airflow',
         'description'           : 'Hemnet scraper for sales items',
         'depend_on_past'        : False,
-        'start_date'            : datetime(2020, 8, 18),
+        'start_date'            : datetime(2020, 8, 17),
         'email_on_failure'      : False,
         'email_on_retry'        : False,
         'retries'               : 0,
@@ -20,7 +20,7 @@ dag = DAG(
     dag_id='kafkaForsaleToBronzeDag',
     default_args=default_args,
     description='Ingesting forsale items from kafka to S3 bronze grade deltalake',
-    schedule_interval='0 20 * * *',  # TODO
+    schedule_interval='0 20 * * *',
 )
 
 spark_submit_cmd = """
@@ -35,7 +35,9 @@ cd {{ var.value.ETL_HOME }}
     --conf spark.hadoop.fs.s3a.secret.key={{ var.value.AWS_S3_SECRET }} \
     --py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
     --job forsaleKafkaToBronze  \
-    --job-args REDIS_HOST={{ var.value.REDIS_HOST }} KAFKA_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }}
+    --job-args REDIS_HOST={{ var.value.REDIS_HOST }}  \
+        KAFKA_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }}  \
+        S3_SINK={{ var.value.S3_SINK_FORSALE_BRONZE }}
 """
 
 t1 = SSHOperator(

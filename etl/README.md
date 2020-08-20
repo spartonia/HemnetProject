@@ -42,7 +42,8 @@ spark-submit \
 	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET \
 	--py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
 	--job forsaleKafkaToBronze  \
-	--job-args REDIS_HOST=localhost KAFKA_TOPIC=test-topic
+	--job-args REDIS_HOST=localhost KAFKA_TOPIC=test-topic \
+		S3_SINK=s3a://hemnet-project/testHemnetbronzeNew
 ```
 __Note__: If you have changed the code base, run `make build` again before submitting the new code.
 

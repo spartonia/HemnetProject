@@ -20,6 +20,10 @@ def analyze(spark, **kwargs):
     if not kafka_topic:
         raise Exception("'KAFKA_TOPIC' is required. You can pass it through '--job-args'")
 
+    s3_bucket = kwargs.get('S3_SINK')
+    if not s3_bucket:
+        raise Exception("'S3_SINK' is required. You can pass it through '--job-args'")
+
     p_offset_str = redis_client.hget("hemnet:forsale:kafka", kafka_topic)
     if p_offset_str:
         p_offset = json.loads(p_offset_str)
@@ -63,7 +67,7 @@ def analyze(spark, **kwargs):
         .format("delta")
         .mode("overwrite")
         .option("overwriteSchema", "true")
-        .save("s3a://hemnet-project/testHemnetbronzeNew"))
+        .save(s3_bucket))
 
 
 def update_topic_partition(redis, tpos):
