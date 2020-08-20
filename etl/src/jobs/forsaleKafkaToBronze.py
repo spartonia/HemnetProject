@@ -56,18 +56,19 @@ def analyze(spark, **kwargs):
         .select("topic", "partition", "offset")
         .collect())
 
+    (data
+        .write
+        .partitionBy("ingestion_date")
+        .format("delta")
+        .mode("append")
+        # .option("overwriteSchema", "true")
+        .save(s3_bucket))
+
     print('*' * 50)
     update_topic_partition(redis_client, tpos)
 
     print("data count: ", data.count())
     print('*' * 50)
-    (data
-        .write
-        .partitionBy("ingestion_date")
-        .format("delta")
-        .mode("overwrite")
-        .option("overwriteSchema", "true")
-        .save(s3_bucket))
 
 
 def update_topic_partition(redis, tpos):
