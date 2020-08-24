@@ -8,7 +8,7 @@ default_args = {
         'owner'                 : 'airflow',
         'description'           : 'Hemnet scraper for sales items',
         'depend_on_past'        : False,
-        'start_date'            : datetime(2020, 8, 17),
+        'start_date'            : datetime(2020, 8, 23),
         'email_on_failure'      : False,
         'email_on_retry'        : False,
         'retries'               : 0,
@@ -17,9 +17,9 @@ default_args = {
 
 
 dag = DAG(
-    dag_id='kafkaForsaleToBronzeDag',
+    dag_id='forsaleToSilvereDag',
     default_args=default_args,
-    description='Ingesting forsale items from kafka to S3 bronze grade deltalake',
+    description='Ingesting forsale data to S3 silver grade deltalake',
     schedule_interval='0 20 * * *',
 )
 
@@ -34,15 +34,16 @@ cd {{ var.value.ETL_HOME }}
     --conf spark.hadoop.fs.s3a.access.key={{ var.value.AWS_S3_ACCESS }}  \
     --conf spark.hadoop.fs.s3a.secret.key={{ var.value.AWS_S3_SECRET }} \
     --py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
-    --job forsaleKafkaToBronze  \
-    --job-args REDIS_HOST={{ var.value.REDIS_HOST }}  \
-        KAFKA_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }}  \
-        S3_SINK={{ var.value.S3_SINK_FORSALE_BRONZE }}
+    --job forsaleRefinedSilver  \
+    --job-args  \
+        S3_SOURCE={{ var.value.S3_SINK_FORSALE_BRONZE }}  \
+        S3_SINK={{ var.value.S3_SINK_FORSALE_SILVER }}  \
+        FOR_DATE={{ ds }}
 """
 
 t1 = SSHOperator(
     ssh_conn_id='ssh_alp-XPS-13-9380',
-    task_id='kafkaForsaleToBronzeTask',  # TODO {{ ds }}
+    task_id='forsaleToSilverTask',  # TODO {{ ds }}
     command=spark_submit_cmd,
     dag=dag)
 
