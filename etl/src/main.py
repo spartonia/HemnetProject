@@ -41,7 +41,7 @@ if __name__ == '__main__':
     job_args = dict()
     if args.job_args:
         job_args_tuples = [arg_str.split('=') for arg_str in args.job_args]
-        print 'job_args_tuples: %s' % job_args_tuples
+        print('job_args_tuples: %s' % job_args_tuples)
         job_args = {a[0]: a[1] for a in job_args_tuples}
 
     print('\nRunning job %s...\nenvironment is %s\n' % (args.job_name, environment))
@@ -62,4 +62,4 @@ if __name__ == '__main__':
 
     spark.stop()
 
-    print "\nExecution of job %s took %s seconds" % (args.job_name, end-start)
+    print("\nExecution of job %s took %s seconds" % (args.job_name, end-start))

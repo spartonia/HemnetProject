@@ -30,6 +30,8 @@ $ pip install -r requirements.txt -t ./src/libs
 $ make build
 ```
 
+##### forsaleKafkaToBronze
+
 4. Run:
 ```bash
 spark-submit \
@@ -44,6 +46,26 @@ spark-submit \
 	--job forsaleKafkaToBronze  \
 	--job-args REDIS_HOST=localhost KAFKA_TOPIC=test-topic \
 		S3_SINK=s3a://hemnet-project/testHemnetbronzeNew
+```
+
+##### forsaleRefinedSilver
+
+4. Run:
+```bash
+spark-submit \
+	--packages io.delta:delta-core_2.12:0.7.0,org.apache.hadoop:hadoop-aws:2.7.7,org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0  \
+	--conf spark.delta.logStore.class=org.apache.spark.sql.delta.storage.S3SingleDriverLogStore  \
+	--conf spark.hadoop.fs.s3a.endpoint=s3-eu-north-1.amazonaws.com  \
+	--conf spark.driver.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
+	--conf spark.executor.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
+	--conf spark.hadoop.fs.s3a.access.key=$AWS_S3_ACCESS  \
+	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET \
+	--py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
+	--job forsaleRefinedSilver  \
+	--job-args \
+		S3_SOURCE=s3a://hemnet-project/forsale-bronze \
+		S3_SINK=s3a://hemnet-project/testHemnetSilver \
+		FOR_DATE='2020-08-19'
 ```
 __Note__: If you have changed the code base, run `make build` again before submitting the new code.
 
