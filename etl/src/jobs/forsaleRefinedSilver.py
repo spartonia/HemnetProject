@@ -2,6 +2,7 @@ import json
 
 import pyspark.sql.functions as F
 from pyspark.sql.types import *
+from delta.tables import *
 
 
 def analyze(spark, **kwargs):
@@ -24,9 +25,9 @@ def analyze(spark, **kwargs):
         .load(s3_source)
         .where(f"ingestion_date = '{for_date}'"))
 
-    print("=" * 80)
-    print(f"Number of records to be processed for date {for_date}: {df.count()}")
-    print("=" * 80)
+    print("*" * 20,
+        f"Number of records to be processed for date {for_date}: {df.count()}",
+        "*" * 20)
 
     value_schema = StructType([
         StructField('url', StringType(), True),
@@ -62,39 +63,70 @@ def analyze(spark, **kwargs):
     )
 
     # Get datalayer (props json)
-    dataLayer_pattern = 'dataLayer\s*=\s*(\[.*\]);'
+    property_pattern = 'dataLayer\s*=\s*\[.*\"property\":\s*(\{.*)\}\];'
     df = (df
-        .withColumn("data_layer", F.regexp_extract(F.col("source"), dataLayer_pattern, 1))
+        .withColumn("props_str", F.regexp_extract(F.col("source"), property_pattern, 1))
         .drop("source")
     )
 
-    # Convert json string to struct
-    rdds = df.rdd.map(lambda r: r.data_layer)
-    jdf = spark.read.json(rdds)
+    json_schema = (StructType()
+               .add("id", IntegerType(), True)
+               .add("broker_firm", StringType(), True)
+               .add("broker_agency_id", IntegerType(), True)
+               .add("location", StringType(), True)
+               .add("locations", StructType()
+                  .add("country", StringType(), True)
+                  .add("county", StringType(), True)
+                  .add("municipality", StringType(), True)
+                  .add("postal_city", StringType(), True)
+                  .add("street", StringType(), True)
+                  .add("city", StringType(), True)
+                  .add("district", StringType(), True))
+               .add("new_production", BooleanType(), True)
+               .add("offers_selling_price", BooleanType(), True)
+               .add("status", StringType(), True)
+               .add("housing_form", StringType(), True)
+               .add("tenure", StringType(), True)
+               .add("street_address", StringType(), True)
+               .add("rooms", DoubleType(), True)
+               .add("living_area", DoubleType(), True)
+               .add("supplemental_area", DoubleType(), True)
+               .add("land_area", DoubleType(), True)
+               .add("driftkostnad", IntegerType(), True)
+               .add("price", LongType(), True)
+               .add("has_price_change", BooleanType(), True)
+               .add("upcoming_open_houses", BooleanType(), True)
+               .add("bidding", BooleanType(), True)
+               .add("has_floorplan", BooleanType(), True)
+               .add("publication_date", StringType(), True)
+               .add("construction_year", StringType(), True)
+               .add("callout", StringType(), True)
+               .add("amenities", ArrayType(StringType(), True))
+               .add("water_distance", LongType(), True)
+              )
 
-    jdf = (jdf
-        .where("property['id'] is not null")
-        .selectExpr("property['id'] as prop_id", "property")
+    df = (df
+        .withColumn('props', F.from_json(df.props_str, json_schema))
+        .where("props['id'] is not null")
+        .drop("props_str")
     )
 
-    # jdf.printSchema()
+    exists = DeltaTable.isDeltaTable(spark, s3_sink)
 
-    # join df and jsonified props
-    joined = (df
-        .join(jdf, df.hemnet_id == jdf.prop_id)
-        .drop("data_layer")
-        .drop("prop_id")
-    )
+    if not exists:
+        (df
+            .write
+            .partitionBy("ingestion_date")
+            .format("delta")
+            .mode("append")
+            .save(s3_sink))
+    else:
+        deltaTable = DeltaTable.forPath(spark, s3_sink)
+        (deltaTable
+            .alias("t")
+            .merge(df.alias("s"), "t.hemnet_id = s.hemnet_id")
+            .whenMatchedUpdateAll()
+            .whenNotMatchedInsertAll()
+            .execute())
 
-    print(joined.columns)
-
-    (joined
-        .write
-        .partitionBy("ingestion_date")
-        .format("delta")
-        .mode("append")
-        .save(s3_sink))
-
-    print('=' * 80)
-    print(f'Stored {joined.count()} records into {s3_sink}')
-    print('=' * 80)
+    print('*' * 20, f'Stored {df.count()} records into {s3_sink}', '*' * 20)
