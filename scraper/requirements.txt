@@ -46,3 +46,5 @@ Twisted==20.3.0
 w3lib==1.22.0
 wcwidth==0.2.5
 zope.interface==5.1.0
+xmltodict==0.12.0
+python-dateutil==2.8.1
