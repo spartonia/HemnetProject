@@ -4,15 +4,12 @@ from airflow.operators.docker_operator import DockerOperator
 from airflow.contrib.operators.ssh_operator import SSHOperator
 
 
-# XXX: Update image name/tag
-docker_image_to_run = 'hemnet-forsalesspider:latest'
-
+DAILY_SPIDER_DOCKER_IMAGE = 'hemnet-daily-spider:latest'
 
 default_args = {
         'owner'                 : 'airflow',
-        'description'           : 'Hemnet scraper for sales items',
         'depend_on_past'        : False,
-        'start_date'            : datetime(2020, 8, 12),
+        'start_date'            : datetime(2020, 8, 29),
         'email_on_failure'      : False,
         'email_on_retry'        : False,
         'retries'               : 1,
@@ -20,23 +17,24 @@ default_args = {
 }
 
 dag = DAG(
-    'Hemnet_forsales_spider_dag',
+    'Hemnet_daily_forsale_workflow',
     default_args=default_args,
-    description='Pipeline for scraping "forsale" data from hemnet and \
-        ingesting to deltalake bronze grade tables on S3',
+    description='Pipeline for scraping daily "forsale" data from hemnet and \
+        ingesting to deltalake on S3',
     schedule_interval='53 15 * * *' # 3:53 PM
 )
 
 cmd = """
-    forsalespider \
+    dailyspider \
+    -a target='forsale' \
+    -a fordate={{ ds }} \
     -s KAFKA_PRODUCER_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }} \
-    -s KAFKA_PRODUCER_BROKERS={{ var.value.KAFKA_BROKERS }} \
-    -s REDIS_HOST={{ var.value.REDIS_HOST }}
+    -s KAFKA_PRODUCER_BROKERS={{ var.value.KAFKA_BROKERS }}
 """
 
-scrape_pages = DockerOperator(
-    task_id='hemnet_forsalesspider',
-    image=f'{docker_image_to_run}',
+scrape_pages_to_kafka = DockerOperator(
+    task_id='hemnet_daily_forsale_spider',
+    image=DAILY_SPIDER_DOCKER_IMAGE,
     command=cmd,
     docker_url='unix://var/run/docker.sock',
     network_mode='host',
@@ -44,7 +42,7 @@ scrape_pages = DockerOperator(
 )
 
 
-spark_submit_cmd = """
+spark_submit_cmd_forsale_bronze = """
 cd {{ var.value.ETL_HOME }}
 {{ var.value.SPARK_HOME }}/spark-submit \
     --packages io.delta:delta-core_2.12:0.7.0,org.apache.hadoop:hadoop-aws:2.7.7,org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0  \
@@ -63,12 +61,12 @@ cd {{ var.value.ETL_HOME }}
 
 kafka_to_bronze = SSHOperator(
     ssh_conn_id='ssh_alp-XPS-13-9380',
-    task_id='kafkaForsaleToBronzeTask',
-    command=spark_submit_cmd,
+    task_id=f'kafkaForsaleToBronzeTask',
+    command=spark_submit_cmd_forsale_bronze,
     dag=dag)
 
 
-spark_submit_cmd_dorsale_silver = """
+spark_submit_cmd_forsale_silver = """
 cd {{ var.value.ETL_HOME }}
 {{ var.value.SPARK_HOME }}/spark-submit \
     --packages io.delta:delta-core_2.12:0.7.0,org.apache.hadoop:hadoop-aws:2.7.7,org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0  \
@@ -83,14 +81,14 @@ cd {{ var.value.ETL_HOME }}
     --job-args  \
         S3_SOURCE={{ var.value.S3_SINK_FORSALE_BRONZE }}  \
         S3_SINK={{ var.value.S3_SINK_FORSALE_SILVER }}  \
-        FOR_DATE={{ tomorrow_ds }}
+        FOR_DATE={{ ds }}
 """
 
 bronze_to_silver = SSHOperator(
     ssh_conn_id='ssh_alp-XPS-13-9380',
     task_id='forsaleToSilverTask',
-    command=spark_submit_cmd_dorsale_silver,
+    command=spark_submit_cmd_forsale_silver,
     dag=dag)
 
 
-scrape_pages >> kafka_to_bronze  >> bronze_to_silver
+scrape_pages_to_kafka >> kafka_to_bronze  >> bronze_to_silver
