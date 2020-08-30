@@ -64,7 +64,7 @@ cd {{ var.value.ETL_HOME }}
 kafka_to_bronze = SSHOperator(
     ssh_conn_id='ssh_alp-XPS-13-9380',
     task_id=f'kafkaSoldToBronzeTask',
-    command=spark_submit_cmd_forsale_bronze,
+    command=spark_submit_cmd_kafka_bronze,
     dag=dag)
 
 
