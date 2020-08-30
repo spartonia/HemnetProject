@@ -24,7 +24,11 @@ def analyze(spark, **kwargs):
     if not s3_bucket:
         raise Exception("'S3_SINK' is required. You can pass it through '--job-args'")
 
-    p_offset_str = redis_client.hget("hemnet:forsale:kafka", kafka_topic)
+    target = kwargs.get('TARGET')
+
+    redis_key_path = f"hemnet:{target}:kafka"
+    p_offset_str = redis_client.hget(redis_key_path, kafka_topic)
+
     if p_offset_str:
         p_offset = json.loads(p_offset_str)
     else:
@@ -32,13 +36,15 @@ def analyze(spark, **kwargs):
 
     tpo = {kafka_topic: p_offset}
 
-    df = spark\
-        .read\
-        .format("kafka")\
-        .option("kafka.bootstrap.servers", "localhost:9092")\
-        .option("subscribe", kafka_topic)\
-        .option("startingOffsets", json.dumps(tpo))\
-        .load()
+    KAFKA_BROKERS = "localhost:9092"  # on host machine
+
+    df = (spark
+        .read
+        .format("kafka")
+        .option("kafka.bootstrap.servers", KAFKA_BROKERS)
+        .option("subscribe", kafka_topic)
+        .option("startingOffsets", json.dumps(tpo))
+        .load())
 
     today = F.current_date()
 
@@ -47,8 +53,8 @@ def analyze(spark, **kwargs):
         .withColumn("value", df.value.cast("string"))
         .withColumn("ingestion_date", today))
 
-    windowSpec = \
-        Window.partitionBy(df["topic"], df["partition"]).orderBy(df["offset"].desc())
+    windowSpec = (Window
+        .partitionBy(df["topic"], df["partition"]).orderBy(df["offset"].desc()))
 
     maxOffset = F.row_number().over(windowSpec)
     tpos = (df.withColumn("rowNumber", maxOffset)
@@ -65,13 +71,13 @@ def analyze(spark, **kwargs):
         .save(s3_bucket))
 
     print('*' * 50)
-    update_topic_partition(redis_client, tpos)
+    update_topic_partition(redis_client, tpos, redis_key_path)
 
     print("data count: ", data.count())
     print('*' * 50)
 
 
-def update_topic_partition(redis, tpos):
+def update_topic_partition(redis, tpos, key_path):
     """
     Updates last read topicpartition offsets in redis
     """
@@ -84,4 +90,4 @@ def update_topic_partition(redis, tpos):
             po[str(el['partition'])] = int(el['offset'] + 1)
 
         po_str = json.dumps(po)
-        redis.hmset("hemnet:forsale:kafka", {topic: po_str})
+        redis.hmset(key_path, {topic: po_str})

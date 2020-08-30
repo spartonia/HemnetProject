@@ -21,7 +21,7 @@ dag = DAG(
     default_args=default_args,
     description='Pipeline for scraping daily "sold" data from hemnet and \
         ingesting to deltalake on S3',
-    schedule_interval='23 20 * * *' # 8:23 PM
+    schedule_interval='5 23 * * *' # 5:23 AM
 )
 
 cmd = """
@@ -41,4 +41,31 @@ scrape_pages_to_kafka = DockerOperator(
     dag=dag
 )
 
-scrape_pages_to_kafka
+
+spark_submit_cmd_kafka_bronze = """
+cd {{ var.value.ETL_HOME }}
+{{ var.value.SPARK_HOME }}/spark-submit \
+    --packages io.delta:delta-core_2.12:0.7.0,org.apache.hadoop:hadoop-aws:2.7.7,org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.0  \
+    --conf spark.delta.logStore.class=org.apache.spark.sql.delta.storage.S3SingleDriverLogStore  \
+    --conf spark.hadoop.fs.s3a.endpoint={{ var.value.S3_ENDPOINT }}  \
+    --conf spark.driver.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
+    --conf spark.executor.extraJavaOptions=-Dcom.amazonaws.services.s3.enableV4=true  \
+    --conf spark.hadoop.fs.s3a.access.key={{ var.value.AWS_S3_ACCESS }}  \
+    --conf spark.hadoop.fs.s3a.secret.key={{ var.value.AWS_S3_SECRET }} \
+    --py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
+    --job dailyKafkaToBronze  \
+    --job-args \
+        REDIS_HOST={{ var.value.REDIS_HOST }}  \
+        KAFKA_TOPIC={{ var.value.KAFKA_TOPIC_SOLD }}  \
+        S3_SINK={{ var.value.S3_SINK_SOLD_BRONZE }}  \
+        TARGET=sold
+"""
+
+kafka_to_bronze = SSHOperator(
+    ssh_conn_id='ssh_alp-XPS-13-9380',
+    task_id=f'kafkaSoldToBronzeTask',
+    command=spark_submit_cmd_forsale_bronze,
+    dag=dag)
+
+
+scrape_pages_to_kafka >> kafka_to_bronze

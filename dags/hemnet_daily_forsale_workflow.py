@@ -21,7 +21,7 @@ dag = DAG(
     default_args=default_args,
     description='Pipeline for scraping daily "forsale" data from hemnet and \
         ingesting to deltalake on S3',
-    schedule_interval='53 15 * * *' # 3:53 PM
+    schedule_interval='1 15 * * *' # 1:53 AM
 )
 
 cmd = """
@@ -53,10 +53,11 @@ cd {{ var.value.ETL_HOME }}
     --conf spark.hadoop.fs.s3a.access.key={{ var.value.AWS_S3_ACCESS }}  \
     --conf spark.hadoop.fs.s3a.secret.key={{ var.value.AWS_S3_SECRET }} \
     --py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
-    --job forsaleKafkaToBronze  \
+    --job dailyKafkaToBronze  \
     --job-args REDIS_HOST={{ var.value.REDIS_HOST }}  \
         KAFKA_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }}  \
-        S3_SINK={{ var.value.S3_SINK_FORSALE_BRONZE }}
+        S3_SINK={{ var.value.S3_SINK_FORSALE_BRONZE }}  \
+        TARGET=forsale
 """
 
 kafka_to_bronze = SSHOperator(

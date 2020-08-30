@@ -44,6 +44,11 @@ if __name__ == '__main__':
         print('job_args_tuples: %s' % job_args_tuples)
         job_args = {a[0]: a[1] for a in job_args_tuples}
 
+    target = job_args.get('TARGET')
+    VALID_TARGETS = ['forsale', 'sold']
+    if not target or target not in VALID_TARGETS:
+        raise ValueError(f"'TARGET' is required or is invalid. Valid hoices are {VALID_TARGETS}")
+
     print('\nRunning job %s...\nenvironment is %s\n' % (args.job_name, environment))
 
     # os.environ.update(environment)

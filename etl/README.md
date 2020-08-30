@@ -30,7 +30,11 @@ $ pip install -r requirements.txt -t ./src/libs
 $ make build
 ```
 
-##### forsaleKafkaToBronze
+##### dailyKafkaToBronze
+Job for reading daily scraped data from Kafka and saving on S3 bronze grade delta lake.
+
+__Note__:
+* `target` is one of `forsale` or `sold`.
 
 4. Run:
 ```bash
@@ -43,9 +47,10 @@ spark-submit \
 	--conf spark.hadoop.fs.s3a.access.key=$AWS_S3_ACCESS  \
 	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET \
 	--py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
-	--job forsaleKafkaToBronze  \
+	--job dailyKafkaToBronze  \
 	--job-args REDIS_HOST=localhost KAFKA_TOPIC=test-topic \
-		S3_SINK=s3a://hemnet-project/testHemnetbronzeNew
+		S3_SINK=s3a://hemnet-project/testHemnetbronzeNew \
+		TARGET=<target>
 ```
 
 ##### forsaleRefinedSilver
