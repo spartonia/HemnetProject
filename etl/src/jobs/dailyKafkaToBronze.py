@@ -7,6 +7,9 @@ import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
 
+VALID_TARGETS = ['forsale', 'sold']
+
+
 def analyze(spark, **kwargs):
 
     redis_host = kwargs.get('REDIS_HOST')
@@ -24,7 +27,9 @@ def analyze(spark, **kwargs):
     if not s3_bucket:
         raise Exception("'S3_SINK' is required. You can pass it through '--job-args'")
 
-    target = kwargs.get('TARGET')
+    target = job_args.get('TARGET')
+    if not target or target not in VALID_TARGETS:
+        raise ValueError(f"'TARGET' is required or is invalid. Valid hoices are {VALID_TARGETS}")
 
     redis_key_path = f"hemnet:{target}:kafka"
     p_offset_str = redis_client.hget(redis_key_path, kafka_topic)
