@@ -27,7 +27,7 @@ def analyze(spark, **kwargs):
     if not s3_bucket:
         raise Exception("'S3_SINK' is required. You can pass it through '--job-args'")
 
-    target = job_args.get('TARGET')
+    target = kwargs.get('TARGET')
     if not target or target not in VALID_TARGETS:
         raise ValueError(f"'TARGET' is required or is invalid. Valid hoices are {VALID_TARGETS}")
 
