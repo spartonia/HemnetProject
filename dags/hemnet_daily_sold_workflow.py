@@ -4,7 +4,7 @@ from airflow.operators.docker_operator import DockerOperator
 from airflow.contrib.operators.ssh_operator import SSHOperator
 
 
-DAILY_SPIDER_DOCKER_IMAGE = 'hemnet-daily-spider:latest'
+HEMNET_SPIDER_DOCKER_IMAGE = 'hemnet-spiders:latest'
 
 default_args = {
         'owner'                 : 'airflow',
@@ -34,7 +34,7 @@ cmd = """
 
 scrape_pages_to_kafka = DockerOperator(
     task_id='hemnet_daily_sold_spider',
-    image=DAILY_SPIDER_DOCKER_IMAGE,
+    image=HEMNET_SPIDER_DOCKER_IMAGE,
     command=cmd,
     docker_url='unix://var/run/docker.sock',
     network_mode='host',
