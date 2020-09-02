@@ -44,3 +44,21 @@ $ docker run --net=host <TAG>[:<VERSION>] dailyspider \
 ###### Airflow
 Update the corresponding dag file in `./dags` folder and copy the
 file to airflow dags folder.
+
+
+### Historic data collection spiders
+Spiders for collecting historical data
+
+#### historicSoldURLCollector
+Spider for collecting url of sold items. It collectec urls and puts into a redis set collection (`historicSoldURLCollector:sold_urls`). Ids of municipalities for wich their hostoric data is collectedis stored in redis at `historicSoldURLCollector:visited_municiplities` to avoid revisiting them.
+
+__params__:
+* `MAX_LOC_PER_RUN`: max number of municiplities to scrape per run (to avoid getting blocked)
+
+##### How to Run
+###### Bash
+```bash
+$ scrapy crawl historicSoldURLCollector \
+	-s REDIS_HOST=localhost \
+	-a MAX_LOC_PER_RUN=50
+```
