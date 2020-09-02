@@ -54,6 +54,8 @@ if __name__ == '__main__':
         .appName(args.job_name)\
         .getOrCreate()
 
+    spark.conf.set("spark.sql.shuffle.partitions", 4)
+
     job_module = importlib.import_module('jobs.%s' % args.job_name)
 
     start = time.time()
