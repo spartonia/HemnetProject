@@ -82,7 +82,7 @@ cd {{ var.value.ETL_HOME }}
     --job-args  \
         S3_SOURCE={{ var.value.S3_SINK_FORSALE_BRONZE }}  \
         S3_SINK={{ var.value.S3_SINK_FORSALE_SILVER }}  \
-        FOR_DATE={{ ds_tomorrow }}
+        FOR_DATE={{ tomorrow_ds }}
 """
 
 bronze_to_silver = SSHOperator(
