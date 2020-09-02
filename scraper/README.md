@@ -62,3 +62,12 @@ $ scrapy crawl historicSoldURLCollector \
 	-s REDIS_HOST=localhost \
 	-a MAX_LOC_PER_RUN=50
 ```
+
+###### Docker
+```bash
+$ docker run  --net=host <TAG>[:<VERSION>] \
+	historicSoldURLCollector \
+	-s REDIS_HOST=<redis-host> \
+	-a MAX_LOC_PER_RUN=<max-loc-per-run>
+
+```
