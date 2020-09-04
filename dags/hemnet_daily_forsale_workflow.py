@@ -13,7 +13,7 @@ default_args = {
         'email_on_failure'      : False,
         'email_on_retry'        : False,
         'retries'               : 1,
-        'retry_delay'           : timedelta(hours=1)
+        'retry_delay'           : timedelta(minutes=15)
 }
 
 dag = DAG(
@@ -21,13 +21,13 @@ dag = DAG(
     default_args=default_args,
     description='Pipeline for scraping daily "forsale" data from hemnet and \
         ingesting to deltalake on S3',
-    schedule_interval='1 15 * * *' # 1:53 AM
+    schedule_interval='41 23 * * *' # 23:41
 )
 
 cmd = """
     dailyspider \
     -a target='forsale' \
-    -a fordate={{ ds }} \
+    -a fordate={{ tomorrow_ds }} \
     -s KAFKA_PRODUCER_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }} \
     -s KAFKA_PRODUCER_BROKERS={{ var.value.KAFKA_BROKERS }}
 """
