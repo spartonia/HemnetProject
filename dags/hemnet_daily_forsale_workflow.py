@@ -21,15 +21,15 @@ dag = DAG(
     default_args=default_args,
     description='Pipeline for scraping daily "forsale" data from hemnet and \
         ingesting to deltalake on S3',
-    schedule_interval='41 23 * * *' # 23:41
+    schedule_interval='41 20 * * *' # 20:41
 )
 
 cmd = """
     dailyspider \
     -a target='forsale' \
-    -a fordate={{ tomorrow_ds }} \
     -s KAFKA_PRODUCER_TOPIC={{ var.value.KAFKA_TOPIC_FORSALE }} \
-    -s KAFKA_PRODUCER_BROKERS={{ var.value.KAFKA_BROKERS }}
+    -s KAFKA_PRODUCER_BROKERS={{ var.value.KAFKA_BROKERS }} \
+    -s REDIS_HOST={{ var.value.REDIS_HOST }}
 """
 
 scrape_pages_to_kafka = DockerOperator(

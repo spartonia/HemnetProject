@@ -16,9 +16,10 @@ On `scraper` folder, run:
 ```bash
 $ scrapy crawl dailyspider \
 	-a target=<target> \
-	-a fordate=<fordate> \
 	-s KAFKA_PRODUCER_TOPIC=<kafka_topic_to_produce_results_to> \
-	-s KAFKA_PRODUCER_BROKERS=broker:port,broker:port.. 
+	-s KAFKA_PRODUCER_BROKERS=broker:port,broker:port.. \
+	-s REDIS_HOST=<redis-host> \
+	[-s REDIS_PORT=<redis-port>]
 ```
 
 ###### Docker
@@ -36,9 +37,10 @@ Run docker:
 ```bash
 $ docker run --net=host <TAG>[:<VERSION>] dailyspider \
 	-a target=<target> \
-	-a fordate=<fordate> \
 	-s KAFKA_PRODUCER_TOPIC=<kafka_topic_to_produce_results_to> \
-	-s KAFKA_PRODUCER_BROKERS=broker:port,broker:port..
+	-s KAFKA_PRODUCER_BROKERS=broker:port,broker:port.. \
+	-s REDIS_HOST=<redis-host> \
+	[-s REDIS_PORT=<redis-port>]
 ```
 
 ###### Airflow
