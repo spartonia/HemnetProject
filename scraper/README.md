@@ -73,3 +73,29 @@ $ docker run  --net=host <TAG>[:<VERSION>] \
 	-a MAX_LOC_PER_RUN=<max-loc-per-run>
 
 ```
+
+#### historicSoldSpider
+Spider for downloading the sold urls collected by `historicSoldURLCollector`. It reads urls from redis (`historicSoldURLCollector:sold_urls`), downloads the page and publishes to `KAFKA_PRODUCER_TOPIC`, and marks them as downloaded at redis (`'hemnet:sold:collected_urls_bloom'`). It also extracts the canonical sale url and puts it into redis (`hemnet:forsale:canonical_urls`) for later processing.
+
+__params__:
+* `MAX_ITEMS_PER_RUN`: max number of urls to scrape per run (to avoid getting blocked) - Optional, default: `2400`
+
+##### How to Run
+###### Bash
+```bash
+$ scrapy crawl historicSoldSpider \
+	[-a MAX_ITEMS_PER_RUN=<number>] \
+	-s REDIS_HOST=<host> \
+	-s KAFKA_PRODUCER_TOPIC=<topic> \
+	-s KAFKA_PRODUCER_BROKERS=<host:port,host:port,..>
+```
+
+###### Docker
+```bash
+$ docker run  --net=host <TAG>[:<VERSION>] \
+	historicSoldSpider \
+	[-a MAX_ITEMS_PER_RUN=<number>] \
+	-s REDIS_HOST=<host> \
+	-s KAFKA_PRODUCER_TOPIC=<topic> \
+	-s KAFKA_PRODUCER_BROKERS=<host:port,host:port,..>
+```
