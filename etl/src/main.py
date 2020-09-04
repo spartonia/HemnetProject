@@ -55,6 +55,7 @@ if __name__ == '__main__':
         .getOrCreate()
 
     spark.conf.set("spark.sql.shuffle.partitions", 4)
+    spark.sparkContext.setLogLevel("ERROR")
 
     job_module = importlib.import_module('jobs.%s' % args.job_name)
 

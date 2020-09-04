@@ -1,8 +1,9 @@
 import json
 
-import pyspark.sql.functions as F
-from pyspark.sql.types import *
 from delta.tables import *
+from pyspark.sql.types import *
+from pyspark.sql.window import Window
+from pyspark.sql import functions as F
 
 
 def analyze(spark, **kwargs):
@@ -111,6 +112,16 @@ def analyze(spark, **kwargs):
         .drop("props_str")
     )
 
+    windowSpec = (Window
+        .partitionBy('hemnet_id')
+        .orderBy(F.desc('ingestion_date')))
+
+    df = (df
+        .withColumn('rank', F.row_number().over(windowSpec))
+        .where('rank == 1')
+        .drop('rank')
+      )
+  
     exists = DeltaTable.isDeltaTable(spark, s3_sink)
 
     if not exists:
