@@ -93,11 +93,12 @@ class HistoricSoldSpider(scrapy.Spider):
 
 
     def download_page(self, response):
-        item = PageSourceItem()
-        item['url'] = response.url
-        item['source'] = response.text
-        item['timestamp'] = datetime.utcnow().timestamp()
+        if response.status < 300:
+            item = PageSourceItem()
+            item['url'] = response.url
+            item['source'] = response.text
+            item['timestamp'] = datetime.utcnow().timestamp()
 
-        self._store_canonical_url(response)
-        self._mark_url_as_visited(response.url)
-        yield item
+            self._store_canonical_url(response)
+            self._mark_url_as_visited(response.url)
+            yield item
