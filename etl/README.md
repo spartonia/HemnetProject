@@ -53,7 +53,24 @@ spark-submit \
 		TARGET=<target>
 ```
 
-##### forsaleRefinedSilver
+###### Internals
+* Consumed kafka `topicParitions` (`topic + partition + offset`) are stored in redis as json string in the following manner:
+	- For each topic, partitions and offsets are jsonified as `val = json.dumps({"partition#": offset, ...})`
+	- Then values are stored in a redis hash with this schema:
+    	```bash
+    		hemnet:<spider>:kafka <kafka-topic> <val>
+    	```
+	- So, for `forsale` spider, in redis-cli:
+    	```
+    		HGET hemnet:forsale:kafka test-topic
+    	```
+	    will return something similar to `"{\"0\": 26, \"1\": 34}"`
+
+##### Bronze to Silver Jobs (xxxRefinedSilver)
+Jobs for reading data from delta lake bronze, performing data augmentation and extraction, and storing results in silver grade delta lake on S3.
+
+__params__:
+* job: one of [`forsaleRefinedSilver`, `soldRefinedSilver`]
 
 4. Run:
 ```bash
@@ -66,23 +83,10 @@ spark-submit \
 	--conf spark.hadoop.fs.s3a.access.key=$AWS_S3_ACCESS  \
 	--conf spark.hadoop.fs.s3a.secret.key=$AWS_S3_SECRET \
 	--py-files=dist/jobs.zip,dist/libs.zip dist/main.py  \
-	--job forsaleRefinedSilver  \
+	--job <job-to-run>  \
 	--job-args \
-		S3_SOURCE=s3a://hemnet-project/forsale-bronze \
-		S3_SINK=s3a://hemnet-project/testHemnetSilver \
-		FOR_DATE='2020-08-19'
+		S3_SOURCE=<s3-source> \
+		S3_SINK=<s3-sink> \
+		FOR_DATE=<YYYY-MM-DD>
 ```
 __Note__: If you have changed the code base, run `make build` again before submitting the new code.
-
-## Internals
-* Consumed kafka `topicParitions` (`topic + partition + offset`) are stored in redis as json string in the following manner:
-	- For each topic, partitions and offsets are jsonified as `val = json.dumps({"partition#": offset, ...})`
-	- Then values are stored in a redis hash with this schema:
-    	```bash
-    		hemnet:<spider>:kafka <kafka-topic> <val>
-    	```
-	- So, for `forsale` spider, in redis-cli:
-    	```
-    		HGET hemnet:forsale:kafka test-topic
-    	```
-	    will return something similar to `"{\"0\": 26, \"1\": 34}"`
