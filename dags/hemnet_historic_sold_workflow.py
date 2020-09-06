@@ -1,5 +1,6 @@
 from airflow import DAG
 from datetime import datetime, timedelta
+from airflow.operators.bash_operator import BashOperator
 from airflow.operators.docker_operator import DockerOperator
 from airflow.contrib.operators.ssh_operator import SSHOperator
 
@@ -13,7 +14,7 @@ default_args = {
         'email_on_failure'      : False,
         'email_on_retry'        : False,
         'retries'               : 1,
-        'retry_delay'           : timedelta(hours=1)
+        'retry_delay'           : timedelta(minutes=5)
 }
 
 dag = DAG(
@@ -21,7 +22,7 @@ dag = DAG(
     default_args=default_args,
     description='Pipeline for scraping historic sold data from hemnet and \
         publishing to kafka',
-    schedule_interval='27 0-18 * * *' # At minute 27 past every hour from 0 through 18.
+    schedule_interval='*/27 * * * *' # At minute 27th minute.
 )
 
 # historic_sold_url_cmd = """
@@ -43,7 +44,7 @@ dag = DAG(
 
 historic_sold_downloader = """
     historicSoldSpider \
-    -a MAX_ITEMS_PER_RUN=1200 \
+    -a MAX_ITEMS_PER_RUN=590 \
     -s REDIS_HOST={{ var.value.REDIS_HOST }} \
     -s KAFKA_PRODUCER_TOPIC={{ var.value.KAFKA_TOPIC_SOLD }} \
     -s KAFKA_PRODUCER_BROKERS={{ var.value.KAFKA_BROKERS }}
@@ -51,6 +52,8 @@ historic_sold_downloader = """
 
 scrape_pages_to_kafka = DockerOperator(
     task_id='hemnet_historic_sold_downloader_spider',
+    depends_on_past=True,
+    wait_for_downstream=True,
     image=HEMNET_SPIDER_DOCKER_IMAGE,
     command=historic_sold_downloader,
     docker_url='unix://var/run/docker.sock',
@@ -58,4 +61,12 @@ scrape_pages_to_kafka = DockerOperator(
     dag=dag
 )
 
-scrape_pages_to_kafka
+sleep = BashOperator(
+    task_id='sleep',
+    depends_on_past=True,
+    bash_command=f'sleep {60 * 5}',  # 5 minutes
+    retries=1,
+    dag=dag,
+)
+
+scrape_pages_to_kafka >> sleep
