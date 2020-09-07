@@ -64,7 +64,7 @@ scrape_pages_to_kafka = DockerOperator(
 sleep = BashOperator(
     task_id='sleep',
     depends_on_past=True,
-    bash_command=f'sleep {60 * 5}',  # 5 minutes
+    bash_command=f'sleep {60 * 1}',  # 5 minutes
     retries=1,
     dag=dag,
 )
