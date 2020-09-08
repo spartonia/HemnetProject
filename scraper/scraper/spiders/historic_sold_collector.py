@@ -78,7 +78,8 @@ class HistoricSoldSpider(scrapy.Spider):
 
     def _store_canonical_url(self, response):
         sale_canonical_url = response.xpath("//link[@rel='prev']/@href").extract_first()
-        self.redis.sadd(self.canonical_urls_redis, sale_canonical_url)
+        if sale_canonical_url:
+            self.redis.sadd(self.canonical_urls_redis, sale_canonical_url)
 
     def start_requests(self):
         urls = self._get_urls_from_redis()
@@ -88,6 +89,7 @@ class HistoricSoldSpider(scrapy.Spider):
             url_decoded = url.decode('utf-8')
             if self._is_url_visited(url_decoded):
                 print('Already visited, skipping: ', url_decoded)
+                self.redis.srem(self.sold_urls_redis, url_decoded)
             else:
                 yield scrapy.Request(url_decoded, self.download_page)
 
