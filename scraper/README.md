@@ -99,3 +99,29 @@ $ docker run  --net=host <TAG>[:<VERSION>] \
 	-s KAFKA_PRODUCER_TOPIC=<topic> \
 	-s KAFKA_PRODUCER_BROKERS=<host:port,host:port,..>
 ```
+
+#### historicCanonicalSpider
+Spider for downloading canonical urls (expired forsale) after sols item. It reads urls from redis (`hemnet:forsale:canonical_urls`), downloads the page and publishes to `KAFKA_PRODUCER_TOPIC`, and marks them as downloaded at redis (`hemnet:forsale:collected_urls_bloom`).
+
+__params__:
+* `MAX_ITEMS_PER_RUN`: max number of urls to scrape per run (to avoid getting blocked) - Optional, default: `2400`
+
+##### How to Run
+###### Bash
+```bash
+$ scrapy crawl historicCanonicalSpider \
+	[-a MAX_ITEMS_PER_RUN=<number>] \
+	-s REDIS_HOST=<host> \
+	-s KAFKA_PRODUCER_TOPIC=<topic> \
+	-s KAFKA_PRODUCER_BROKERS=<host:port,host:port,..>
+```
+
+###### Docker
+```bash
+$ docker run  --net=host <TAG>[:<VERSION>] \
+	historicCanonicalSpider \
+	[-a MAX_ITEMS_PER_RUN=<number>] \
+	-s REDIS_HOST=<host> \
+	-s KAFKA_PRODUCER_TOPIC=<topic> \
+	-s KAFKA_PRODUCER_BROKERS=<host:port,host:port,..>
+```
