@@ -9,10 +9,12 @@ from redis.connection import ConnectionError, ResponseError
 from scraper.items import PageSourceItem
 
 
-class HistoricSoldSpider(scrapy.Spider):
-    """Spider for scraping sold items (historical). URLs read from redis. """
+class HistoricCanonicalSpider(scrapy.Spider):
+    """Spider for scraping canonical forsale data for sold items (historical).
+    URLs read from redis. 
+    """
 
-    name = 'historicSoldSpider'
+    name = 'historicCanonicalSpider'
     allowed_domains = ['hemnet.se']
 
     def __init__(self, redis_host, redis_port, *args, **kwargs):
@@ -39,9 +41,6 @@ class HistoricSoldSpider(scrapy.Spider):
             *args, **kwargs,
         )
     
-    @property
-    def sold_urls_redis(self):
-        return "historicSoldURLCollector:sold_urls"
 
     @property
     def canonical_urls_redis(self):
@@ -49,7 +48,7 @@ class HistoricSoldSpider(scrapy.Spider):
 
     @property
     def bloom_name(self):
-        return 'hemnet:sold:collected_urls_bloom'
+        return 'hemnet:forsale:collected_urls_bloom'
     
 
     def _connect_to_redis(self, host, port):
@@ -68,18 +67,13 @@ class HistoricSoldSpider(scrapy.Spider):
         return self.redis.bfExists(self.bloom_name, id)
 
     def _get_urls_from_redis(self):
-        return self.redis.srandmember(self.sold_urls_redis,
+        return self.redis.srandmember(self.canonical_urls_redis,
             self.max_items_per_run)
 
     def _mark_url_as_visited(self, url):
-        self.redis.srem(self.sold_urls_redis, url)
+        self.redis.srem(self.canonical_urls_redis, url)
         id = url.split('-')[-1]
         self.redis.bfAdd(self.bloom_name, id)
-
-    def _store_canonical_url(self, response):
-        sale_canonical_url = response.xpath("//link[@rel='prev']/@href").extract_first()
-        if sale_canonical_url:
-            self.redis.sadd(self.canonical_urls_redis, sale_canonical_url)
 
     def start_requests(self):
         urls = self._get_urls_from_redis()
@@ -89,7 +83,7 @@ class HistoricSoldSpider(scrapy.Spider):
             url_decoded = url.decode('utf-8')
             if self._is_url_visited(url_decoded):
                 print('Already visited, skipping: ', url_decoded)
-                self.redis.srem(self.sold_urls_redis, url_decoded)
+                self.redis.srem(self.canonical_urls_redis, url_decoded)
             else:
                 yield scrapy.Request(url_decoded, self.download_page)
 
@@ -101,6 +95,5 @@ class HistoricSoldSpider(scrapy.Spider):
             item['source'] = response.text
             item['timestamp'] = datetime.utcnow().timestamp()
 
-            self._store_canonical_url(response)
             self._mark_url_as_visited(response.url)
             yield item
