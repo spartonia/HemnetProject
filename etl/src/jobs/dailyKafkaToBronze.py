@@ -7,7 +7,7 @@ import pyspark.sql.functions as F
 from pyspark.sql.window import Window
 
 
-VALID_TARGETS = ['forsale', 'sold']
+VALID_TARGETS = ['forsale', 'sold', 'canonical']
 
 
 def analyze(spark, **kwargs):

@@ -34,7 +34,7 @@ $ make build
 Job for reading daily scraped data from Kafka and saving on S3 bronze grade delta lake.
 
 __Note__:
-* `target` is one of `forsale` or `sold`.
+* `target` is one of `forsale`, `sold` or `canonical`.
 
 4. Run:
 ```bash
