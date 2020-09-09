@@ -70,7 +70,7 @@ spark-submit \
 Jobs for reading data from delta lake bronze, performing data augmentation and extraction, and storing results in silver grade delta lake on S3.
 
 __params__:
-* job: one of [`forsaleRefinedSilver`, `soldRefinedSilver`]
+* job: one of [`forsaleRefinedSilver`, `soldRefinedSilver`, `canonicalRefinedSilver`]
 
 4. Run:
 ```bash
