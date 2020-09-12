@@ -24,7 +24,7 @@ class DailySpider(scrapy.Spider):
     allowed_domains = ['hemnet.se']
 
     def __init__(self, redis_host, redis_port, *args, **kwargs):
-        super(DailySpider, self).__init__()
+        super().__init__()
         self.target = kwargs.get('target')
         self.redis = self._connect_to_redis(redis_host, redis_port)
         self._maybe_setup_bloom()
