@@ -49,6 +49,7 @@ def analyze(spark, **kwargs):
         .option("kafka.bootstrap.servers", KAFKA_BROKERS)
         .option("subscribe", kafka_topic)
         .option("startingOffsets", json.dumps(tpo))
+        .option("kafka.group.id", f"spark.{target}.job")
         .load())
 
     today = F.current_date()
