@@ -41,7 +41,7 @@ def analyze(spark, **kwargs):
 
     tpo = {kafka_topic: p_offset}
 
-    KAFKA_BROKERS = "localhost:9092"  # on host machine
+    KAFKA_BROKERS = kwargs.get('KAFKA_BROKERS', 'localhost:9092')  # on host machine
 
     df = (spark
         .read
